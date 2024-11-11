@@ -9,7 +9,6 @@ public class Monstre {
     public void devorer(Pion pion) {
         // Logique pour dévorer un pion
     }
-    le jeu lalalal
 
     public void pousser() {
         // Logique pour pousser
