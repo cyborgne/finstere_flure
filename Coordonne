@@ -1,0 +1,45 @@
+public class Coordonne {
+    private final int x; // Rend immuable
+    private final int y;
+
+    public Coordonne(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // Getters
+    public int getX() {
+        return this.x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
+
+    // Calcul de la distance "Manhattan"
+    public int distance(Coordonne autre) {
+        if (autre == null)
+            throw new IllegalArgumentException("La coordonnée cible ne peut pas être nulle.");
+        return Math.abs(this.x - autre.x) + Math.abs(this.y - autre.y);
+    }
+
+    // Égalité et hashCode
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Coordonne)) return false;
+
+        Coordonne coordonne = (Coordonne) obj;
+        return this.x == coordonne.x && this.y == coordonne.y;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * this.x + this.y;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + this.x + ", " + this.y + ")";
+    }
+}
