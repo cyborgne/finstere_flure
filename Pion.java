@@ -32,6 +32,7 @@ public class Pion {
         this.sortiTemporairement = false;
         this.valeurFaceA = valeurFaceA;
         this.valeurFaceB = valeurFaceB;
+
     }
 
     public boolean peutEncoreDeplacerAvantMonstre() {
@@ -88,7 +89,7 @@ public class Pion {
         pion.setPosition(null); // Retire la position du pion
     }
 
-    // Méthode pour remettre la face visible à son état initial (Face A par défaut)
+
     // Méthode pour remettre les faces visibles à leur état initial
     public void reinitialiserFace() {
         this.valeurFaceA = Integer.parseInt(this.getId().substring(this.getId().length() - 1)); // Remet A à sa valeur initiale
