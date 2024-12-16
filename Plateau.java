@@ -2,6 +2,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
+
 
 public class Plateau {
     private final int largeur; // Nombre de colonnes
@@ -232,15 +234,21 @@ public class Plateau {
             return false;
         }
 
+        // Vérifie que la case n'est pas occupée par un autre pion
         for (Pion pion : this.pions) {
-            if (!pion.equals(pionEnDeplacement) && pion.getPosition() != null) { // Vérifie que la position n'est pas null
+            if (!pion.equals(pionEnDeplacement) && pion.getPosition() != null) {
                 if (pion.getPosition().equals(coord)) {
-                    // Case occupée par un autre pion
-                    return false;
+                    return false; // Case occupée par un autre pion
                 }
             }
         }
-        return true; // La case est libre pour le pion
+
+        // Vérifie que la case n'est pas occupée par le monstre
+        if (this.positionMonstre != null && coord.equals(this.positionMonstre)) {
+            return false; // Case occupée par le monstre
+        }
+
+        return true; // Toutes les vérifications passées, la case est libre pour le pion
     }
 
 
@@ -289,9 +297,26 @@ public class Plateau {
 
     public void retirerPionTemporairement(Pion pion) {
         if (pion != null) {
-            pion.estSortiTemporairement(); // Marque le pion comme temporairement retiré
-            pion.setPosition(null); // Met la position à null mais reste jouable plus tard
-            System.out.println("[INFO] Le pion " + pion.getId() + " a été mangé temporairement et peut être replacé.");
+            pion.sortirTemporairement(); // Marquer le pion comme mangé temporairement
+            pion.setPosition(null);      // Enlever sa position sur le plateau
+
+            System.out.println("[INFO] Le pion " + pion.getId() + " a été mangé temporairement. Il est maintenant hors plateau.");
+        }
+    }
+
+    public void afficherPionsHorsPlateau(Joueur joueur) {
+        List<Pion> pionsHorsPlateau = joueur.getPions().stream()
+                .filter(Pion::peutRevenirEnJeu) // Filtrer uniquement les pions temporairement sortis
+                .toList();
+
+        if (pionsHorsPlateau.isEmpty()) {
+            System.out.println("[INFO] Aucun pion n'est actuellement hors plateau.");
+            return;
+        }
+
+        System.out.println("[INFO] Pions actuellement hors plateau :");
+        for (Pion pion : pionsHorsPlateau) {
+            System.out.println("- Pion " + pion.getId());
         }
     }
 
