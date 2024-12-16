@@ -1,0 +1,27 @@
+public class TuilePierreTombale {
+    private int pas; // Nombre de pas nécessaires
+    private String cible; // Type de cible ("une proie", "deux proies", ou null)
+
+    // Constructeur
+    public TuilePierreTombale(int pas, String cible) {
+        this.pas = pas;
+        this.cible = cible;
+    }
+
+    // Getters
+    public int getPas() {
+        return this.pas;
+    }
+
+    public String getCible() {
+        return this.cible;
+    }
+
+    @Override
+    public String toString() {
+        return "TuilePierreTombale{" +
+                "pas=" + this.pas +
+                ", cible='" + (this.cible != null ? this.cible : "aucune") + '\'' +
+                '}';
+    }
+}
