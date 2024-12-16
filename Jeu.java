@@ -76,14 +76,10 @@ public class Jeu {
     public void reinitialiserPions() {
         for (Joueur joueur : this.joueurs) {
             for (Pion pion : joueur.getPions()) {
-                // Réinitialiser les pions qui ne sont pas définitivement sortis
-                if (pion.estSorti()) {
-                    System.out.println("[INFO] Le pion " + pion.getId() + " a été mangé définitivement et ne sera pas réinitialisé.");
-                } else if (pion.estSortiTemporairement()) {
-                    System.out.println("[INFO] Le pion " + pion.getId() + " est prêt à entrer de nouveau sur le plateau.");
-                    pion.reinitialiserPourRejouer(); // Réactiver
-                } else {
-                    // Réinitialisation normale
+                if (pion.estSortiTemporairement()) {
+                    pion.reinitialiserPourRejouer(); // Remet en état les pions pour qu'ils puissent revenir
+                    System.out.println("[INFO] Le pion " + pion.getId() + " est prêt à être remis en jeu.");
+                } else if (!pion.estSorti()) {
                     pion.reinitialiserFace();
                     pion.reinitialiserDeplacements();
                     pion.reinitialiserRetournement();
@@ -110,17 +106,34 @@ public class Jeu {
         // Tirage aléatoire d'une tuile
         TuilePierreTombale tuile = obtenirTuilePourMonstre();
 
-        // Déplacer selon la tuile
+        // Déplacer le monstre selon la tuile
         this.monstre.deplacerSelonTuile(tuile, this.plateau);
         this.plateau.mettreAJour();
         this.plateau.afficher();
 
-        // Autres actions
+
+        // Vérifier si des pions sont sur la même case que le monstre
+        for (Joueur joueur : this.joueurs) {
+            for (Pion pion : joueur.getPions()) {
+                if (pion.getPosition() != null && pion.getPosition().equals(this.monstre.getPosition())) {
+                    if (Jeu.secondeManche) {
+                        pion.sortirDefinitivement(); // Sortie définitive en seconde manche
+                        System.out.println("[INFO] Le pion " + pion.getId() + " a été mangé définitivement par le monstre.");
+                    } else {
+                        pion.sortirTemporairement(); // Sortie temporaire en première manche
+                        System.out.println("[INFO] Le pion " + pion.getId() + " a été mangé temporairement par le monstre.");
+                    }
+                    pion.setPosition(null); // Retire le pion du plateau
+                }
+            }
+        }
+
+        // Après tout mouvement du monstre :
         this.plateau.retournerTousLesPions();
         this.plateau.reinitialiserRetournementsPions();
         this.monstre.reinitialiserDeplacements();
-        System.out.println("Les pions peuvent de nouveau être retournés.");
 
+        System.out.println("Les pions peuvent de nouveau être retournés.");
     }
 
     private void initialiserJoueurs() {
@@ -161,6 +174,8 @@ public class Jeu {
     private void tourJoueur(Joueur joueur) {
         System.out.println(joueur.getNom() + ", c'est votre tour !");
         this.plateau.afficher();
+
+        gererRemiseEnJeu(joueur);
 
         // Affiche l'état des pions du joueur
         while (true) { // Boucle jusqu'à ce qu'un déplacement valide soit effectué
@@ -238,12 +253,12 @@ public class Jeu {
             // Vérifie si le joueur décide de s'arrêter
             if (direction.equals("stop")) {
                 // Vérification si le pion peut s'arrêter sur cette case finale
-                if (this.plateau.estOccupationValide(pion.getPosition(), pion)) {
+                if (!coordonneOccupeeParMonstre(pion.getPosition()) && this.plateau.estOccupationValide(pion.getPosition(), pion)) {
                     System.out.println("Vous avez choisi de vous arrêter en " + pion.getPosition() + ".");
                     break; // Sortir de la boucle et terminer le déplacement
                 } else {
                     System.out.println("[Erreur] Vous ne pouvez pas vous arrêter sur la case " +
-                            pion.getPosition() + " car elle est déjà occupée !");
+                            pion.getPosition() + " car elle est soit occupée par le monstre, soit invalide !");
                     continue; // Retour au choix de déplacement
                 }
             }
@@ -267,10 +282,10 @@ public class Jeu {
                     continue; // Réessaie une direction
             }
 
-            // Vérifie si la position est valide pour le déplacement
+            // Vérifie si la prochaine position est valide
             if (this.plateau.estPositionValide(nouvellePosition)) {
-                if (deplacementsRestants > 1 || this.plateau.estOccupationValide(nouvellePosition, pion)) {
-                    // Passage ou arrêt autorisé (si la case est libre ou mouvement temporaire)
+                if (deplacementsRestants > 1 || (!coordonneOccupeeParMonstre(nouvellePosition) && this.plateau.estOccupationValide(nouvellePosition, pion))) {
+                    // Si le pion peut se déplacer (ou passer temporairement sur une case valide) mais sans s'arrêter sur le monstre
                     pion.setPosition(nouvellePosition);
                     deplacementsRestants--;
                     System.out.println("Pion déplacé à " + nouvellePosition + ". Déplacements restants : " + deplacementsRestants);
@@ -279,8 +294,7 @@ public class Jeu {
                     this.plateau.mettreAJour();
                     this.plateau.afficher();
                 } else {
-                    // Tentative d'arrêt sur une case occupée
-                    System.out.println("[Erreur] Vous ne pouvez pas vous arrêter sur la case " + nouvellePosition + " car elle est déjà occupée !");
+                    System.out.println("[Erreur] Vous ne pouvez pas vous arrêter sur la case " + nouvellePosition + " car elle est soit occupée par le monstre, soit invalide !");
                 }
             } else {
                 System.out.println("[Erreur] La position " + nouvellePosition + " est invalide.");
@@ -292,6 +306,10 @@ public class Jeu {
         } else {
             System.out.println("Le pion " + pion.getId() + " a terminé tous ses déplacements.");
         }
+    }
+
+    private boolean coordonneOccupeeParMonstre(Coordonne coord) {
+        return this.plateau.positionMonstre != null && this.plateau.positionMonstre.equals(coord);
     }
 
     // Entrée sur le plateau d'un pion
@@ -334,6 +352,64 @@ public class Jeu {
             deplacerPionDynamique(pion, deplacementsRestants);
         } else {
             System.out.println("Le pion n'a plus de déplacements restants après l'entrée.");
+        }
+    }
+
+    private void gererRemiseEnJeu(Joueur joueur) {
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            // Trouver les pions hors plateau du joueur
+            List<Pion> pionsHorsPlateau = joueur.getPions().stream()
+                    .filter(Pion::peutRevenirEnJeu)
+                    .toList();
+
+            // Si aucun pion hors plateau à remettre
+            if (pionsHorsPlateau.isEmpty()) {
+                System.out.println("[INFO] Aucun pion hors plateau à remettre en jeu.");
+                break;
+            }
+
+            // Afficher liste des pions hors plateau
+            this.plateau.afficherPionsHorsPlateau(joueur);
+
+            // Demander au joueur s'il veut en remettre un en jeu
+            System.out.println("Voulez-vous remettre un pion hors plateau en jeu ? (oui/non)");
+            String choix = scanner.nextLine();
+
+            if (!choix.equalsIgnoreCase("oui")) {
+                break;
+            }
+
+            // Demander l'ID du pion
+            System.out.println("Entrez l'ID du pion que vous voulez remettre sur le plateau :");
+            String idPion = scanner.nextLine();
+
+            Pion pionChoisi = pionsHorsPlateau.stream()
+                    .filter(p -> p.getId().equals(idPion))
+                    .findFirst()
+                    .orElse(null);
+
+            if (pionChoisi == null) {
+                System.out.println("[ERREUR] Aucun pion avec cet ID n'est disponible hors plateau.");
+                continue;
+            }
+
+            // Réintégrer le pion sur une case valide
+            System.out.println("Entrez les coordonnées (x y) où vous voulez placer le pion " + pionChoisi.getId() + " :");
+            String[] coords = scanner.nextLine().split(" ");
+            int x = Integer.parseInt(coords[0]);
+            int y = Integer.parseInt(coords[1]);
+            Coordonne position = new Coordonne(x, y);
+
+            // Valider la position
+            if (this.plateau.estPositionValide(position) && !this.plateau.contientPion(position)) {
+                pionChoisi.remettreEnJeu(position);
+                this.plateau.ajouterPion(pionChoisi);
+                System.out.println("[INFO] Pion " + pionChoisi.getId() + " a été remis en jeu sur " + position);
+            } else {
+                System.out.println("[ERREUR] La position " + position + " est invalide ou déjà occupée.");
+            }
         }
     }
 
